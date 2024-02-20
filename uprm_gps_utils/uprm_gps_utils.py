@@ -40,7 +40,7 @@ class Location:
     
     def rotate(self, pivot, angle_cw_deg: float):
         """
-        Performs a rotation in UTM space about the given pivot.
+        Perrms a rotation in UTM space about the given pivot.
 
         This function is based on: https://stackoverflow.com/questions/34372480/rotate-point-about-another-point-in-degrees-python/34374437#34374437
 
@@ -141,36 +141,36 @@ def normalize_angle(angle) -> float:
     return angle % 360
 
 
-def relative_angle_to_cardinal_angle(angle_relative_to_boat: float, yaw: float, boat_north=0) -> float:
+def relative_angle_to_cardinal_angle(angle_relative_to_vehicle: float, yaw: float, rel_north=0) -> float:
     """
-    Given the yaw of the ASV and the angle of an object,
-    calculates the object's angle with respect to cardinal directions.
+    Given the yaw of the vehicle and the angle of an object,
+    calculates the object's angle to the vehicle with respect to cardinal directions.
     Assumes that global NWSE are at 0º, 90º, 180º, and 270º respectively.
 
-    If the ASV's north is 90º, that means it's right side is at 0º and its left side is at 180º.
-    If an object is at 100º with respect to the aforementioned boat, then it is 10º left of the boat.
+    If the vehicle's relative north is 90º, that means it's right side is at 0º and its left side is at 180º.
+    If an object is at 100º with respect to the aforementioned vehicle, then it is 10º left of the boat.
 
-    The formula used for calculating is: global = ((angle_relative_to_boat - boat_north) + yaw - 360) % 360
+    The formula used for calculating is: global = ((angle_relative_to_vehicle - rel_north) + yaw - 360) % 360
 
     All angles are in degrees.
 
     Parameters:
-        angle_relative_to_boat (float): the angle of the object with respect to the ASV (relative angle)
-        yaw (float): the angle of the ASV's north with respect to global north, defaults to 0
-        boath_north (float): the relative angle that corresponds to the boat's front
+        angle_relative_to_boat (float): The relative angle of the object with respect to the vehicle.
+        yaw (float): The angle of the vehicle's north with respect to global north.
+        rel_north (float): The relative angle that corresponds to the vehicle's front.
     
     Returns (float): The converted angle, in the range [0, 360)
     """
-    return normalize_angle((angle_relative_to_boat - boat_north) + yaw)
+    return normalize_angle((angle_relative_to_vehicle - rel_north) + yaw)
 
 
 def relative_radial_to_global_coordinates(location: Location, distance_of_object_meters: float, cardinal_angle_of_object_degrees: float) -> Location:
     """
-    Given an object's distance to the ASV and angle with respect to cardinal directions,
+    Given an object's distance to the vehicle and angle with respect to cardinal directions,
     computes the object's GPS coordinates.
 
     WARNING:
-        This function does not accout for cases where there is a zone transition.
+        This function is untested for cases where there is a UTM zone transition.
         However, for our purposes that is extremely unlikely.
 
     WARNING:
@@ -188,11 +188,11 @@ def relative_radial_to_global_coordinates(location: Location, distance_of_object
     In cardinal coordinates, North is 0º and angles sweep clockwise.
 
     Parameters: 
-        location (Location): The location of the ASV.
-        disdistance_of_object_meters (float): distance between the ASV and boat in meters 
-        cardinal_angle_of_object_degrees (float): object's angle with respect to cardinal coordinates
+        location (Location): The location of the vehicle.
+        disdistance_of_object_meters (float): Distance between the object and vehicle in meters.
+        cardinal_angle_of_object_degrees (float): Object's angle with respect to cardinal coordinates.
 
-    Returns (float, float): The GPS coordinates of the object. Returns None is there was a problem.
+    Returns (Location): The location coordinates of the object.
     """
 
     # vertical and horizontal displacement in meters
@@ -230,27 +230,3 @@ def distance_between_locations(locationA: Location, locationB: Location) -> floa
       
     # calculate the result
     return (c * r) * 1000 # multiplied by 1000 to obtain meters
-
-
-def global_coordinate_midpoint(locationA: Location, locationB: Location):
-    """
-    Computes the midpoint of two GPS coordinates.
-
-    WARNING:
-        The error margin on this function is on the order of a thousandth of a degree.
-        This means that the results may vary by about 100m with.
-    """
-    # Converting angles in radians
-    lat1 = radians(locationA.lat)
-    lon1 = radians(locationA.lon)
-    lat2 = radians(locationB.lat)
-    lon2 = radians(locationB.lon)
-    
-    Bx = cos(lat2) * cos(lon2 - lon1)
-    By = cos(lat2) * sin(lon2 - lon1)
-
-    # Calculating mid_point lat & lon
-    resultLat = atan2(sin(lat1) + sin(lat2), sqrt((cos(lat1) + Bx) * (cos(lat1) + Bx) + By * By))
-    resultLon = lon1 + atan2(By, cos(lat1) + Bx)
-
-    return degrees(resultLat), degrees(resultLon)
